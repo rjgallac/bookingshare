@@ -35,6 +35,10 @@ public class BusinessHoursPattern {
     @Column(nullable = false, length = 20)
     private String slotTypeValue;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
     public BusinessHoursPattern() {
     }
 
@@ -58,4 +62,7 @@ public class BusinessHoursPattern {
 
     public String getSlotTypeValue() { return slotTypeValue; }
     public void setSlotTypeValue(String slotTypeValue) { this.slotTypeValue = slotTypeValue; }
+
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 }

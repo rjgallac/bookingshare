@@ -25,6 +25,10 @@ public class SlotConfiguration {
 
     private boolean allowSameDayBookings = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
     public enum SlotSplitStrategy {
         FIXED_DURATION,
         TIME_BLOCK,
@@ -54,4 +58,7 @@ public class SlotConfiguration {
 
     public boolean isAllowSameDayBookings() { return allowSameDayBookings; }
     public void setAllowSameDayBookings(boolean allowSameDayBookings) { this.allowSameDayBookings = allowSameDayBookings; }
+
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 }

@@ -2,12 +2,14 @@ package com.bookingshare.controller;
 
 import com.bookingshare.entity.*;
 import com.bookingshare.repository.BusinessHoursPatternRepository;
+import com.bookingshare.repository.CustomerRepository;
 import com.bookingshare.repository.ExceptionOverrideRepository;
 import com.bookingshare.repository.SlotConfigurationRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
@@ -32,8 +34,14 @@ public class SlotController {
     @Autowired
     private SlotConfigurationRepository configRepository;
 
+    @Autowired
+    private CustomerRepository customerRepository;
+
     @PostMapping("/patterns")
-    public ResponseEntity<BusinessHoursPattern> createPattern(@RequestBody PatternRequest request) {
+    public ResponseEntity<BusinessHoursPattern> createPattern(
+            @RequestBody PatternRequest request,
+            @AuthenticationPrincipal Long customerId) {
+        
         BusinessHoursPattern pattern = new BusinessHoursPattern();
         pattern.setName(request.name());
         pattern.setServiceType(request.serviceType());
@@ -45,17 +53,48 @@ public class SlotController {
         pattern.setCloseTime(LocalTime.parse(request.closeTime()));
         pattern.setSlotTypeValue(request.slotType().toUpperCase());
 
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+        pattern.setCustomer(customer);
+
         BusinessHoursPattern saved = patternRepository.save(pattern);
         return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/patterns")
-    public ResponseEntity<List<BusinessHoursPattern>> getAllPatterns() {
-        return ResponseEntity.ok(patternRepository.findAll());
+    public ResponseEntity<List<BusinessHoursPattern>> getAllPatterns(
+            @AuthenticationPrincipal Long customerId) {
+        
+        var patterns = patternRepository.findAll().stream()
+                .filter(p -> p.getCustomer() != null && p.getCustomer().getId().equals(customerId))
+                .toList();
+        return ResponseEntity.ok(patterns);
+    }
+
+    @GetMapping("/exceptions")
+    public ResponseEntity<List<ExceptionOverride>> getAllExceptions(
+            @AuthenticationPrincipal Long customerId) {
+        
+        var exceptions = exceptionRepository.findAll().stream()
+                .filter(e -> e.getCustomer() != null && e.getCustomer().getId().equals(customerId))
+                .toList();
+        return ResponseEntity.ok(exceptions);
+    }
+
+    @PostMapping("/customers")
+    public ResponseEntity<Customer> createCustomer(@RequestBody CustomerCreateRequest request) {
+        Customer customer = new Customer();
+        customer.setName(request.name());
+        customer.setEmail(request.email());
+        Customer saved = customerRepository.save(customer);
+        return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/exceptions")
-    public ResponseEntity<ExceptionOverride> createException(@RequestBody ExceptionRequest request) {
+    public ResponseEntity<ExceptionOverride> createException(
+            @RequestBody ExceptionRequest request,
+            @AuthenticationPrincipal Long customerId) {
+        
         ExceptionOverride exception = new ExceptionOverride();
         exception.setDate(LocalDate.parse(request.date()));
         exception.setType(ExceptionOverride.ExceptionType.valueOf(request.type().toUpperCase()));
@@ -64,6 +103,10 @@ public class SlotController {
         if (request.patternId() != null && !request.patternId().isEmpty()) {
             exception.setPatternId(Long.parseLong(request.patternId()));
         }
+
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+        exception.setCustomer(customer);
 
         if (request.openTime() != null && request.closeTime() != null) {
             exception.setOpenTime(LocalTime.parse(request.openTime()));
@@ -187,4 +230,6 @@ public class SlotController {
             String openTime,
             String closeTime
     ) {}
+
+    public record CustomerCreateRequest(String name, String email) {}
 }

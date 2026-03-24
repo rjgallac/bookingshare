@@ -25,6 +25,10 @@ public class ExceptionOverride {
     @Column(name = "pattern_id")
     private Long patternId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
     private LocalTime openTime;
 
     private LocalTime closeTime;
@@ -57,4 +61,7 @@ public class ExceptionOverride {
 
     public LocalTime getCloseTime() { return closeTime; }
     public void setCloseTime(LocalTime closeTime) { this.closeTime = closeTime; }
+
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 }
