@@ -17,27 +17,27 @@ public class AuthController {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    // For service-to-service: pre-register services with their customerId and secret
+    // For service-to-service: pre-register services with their companyId and secret
     @PostMapping("/token")
     public ResponseEntity<Map<String, Object>> getServiceToken(@RequestBody ServiceAuthRequest request) {
         // In production: validate serviceId/secret against database of registered services
         
-        Long customerId = lookupServiceCustomerId(request.serviceId(), request.secret());
+        Long companyId = lookupServiceCompanyId(request.serviceId(), request.secret());
         
-        if (customerId == null) {
+        if (companyId == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid credentials"));
         }
         
-        String token = generateToken(customerId);
+        String token = generateToken(companyId);
         
         return ResponseEntity.ok(Map.of(
             "token", token,
-            "customerId", customerId,
+            "companyId", companyId,
             "serviceId", request.serviceId()
         ));
     }
 
-    private Long lookupServiceCustomerId(String serviceId, String secret) {
+    private Long lookupServiceCompanyId(String serviceId, String secret) {
         // In production: query database for registered service
         // For demo: return fixed IDs based on service ID
         if ("booking-service".equals(serviceId)) return 1L;

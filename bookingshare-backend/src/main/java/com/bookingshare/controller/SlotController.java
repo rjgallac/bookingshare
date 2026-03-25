@@ -2,7 +2,7 @@ package com.bookingshare.controller;
 
 import com.bookingshare.entity.*;
 import com.bookingshare.repository.BusinessHoursPatternRepository;
-import com.bookingshare.repository.CustomerRepository;
+import com.bookingshare.repository.CompanyRepository;
 import com.bookingshare.repository.ExceptionOverrideRepository;
 import com.bookingshare.repository.SlotConfigurationRepository;
 
@@ -35,12 +35,12 @@ public class SlotController {
     private SlotConfigurationRepository configRepository;
 
     @Autowired
-    private CustomerRepository customerRepository;
+    private CompanyRepository companyRepository;
 
     @PostMapping("/patterns")
     public ResponseEntity<BusinessHoursPattern> createPattern(
             @RequestBody PatternRequest request,
-            @AuthenticationPrincipal Long customerId) {
+            @AuthenticationPrincipal Long companyId) {
         
         BusinessHoursPattern pattern = new BusinessHoursPattern();
         pattern.setName(request.name());
@@ -53,9 +53,9 @@ public class SlotController {
         pattern.setCloseTime(LocalTime.parse(request.closeTime()));
         pattern.setSlotTypeValue(request.slotType().toUpperCase());
 
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
-        pattern.setCustomer(customer);
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+        pattern.setCompany(company);
 
         BusinessHoursPattern saved = patternRepository.save(pattern);
         return ResponseEntity.ok(saved);
@@ -63,37 +63,37 @@ public class SlotController {
 
     @GetMapping("/patterns")
     public ResponseEntity<List<BusinessHoursPattern>> getAllPatterns(
-            @AuthenticationPrincipal Long customerId) {
+            @AuthenticationPrincipal Long companyId) {
         
         var patterns = patternRepository.findAll().stream()
-                .filter(p -> p.getCustomer() != null && p.getCustomer().getId().equals(customerId))
+                .filter(p -> p.getCompany() != null && p.getCompany().getId().equals(companyId))
                 .toList();
         return ResponseEntity.ok(patterns);
     }
 
     @GetMapping("/exceptions")
     public ResponseEntity<List<ExceptionOverride>> getAllExceptions(
-            @AuthenticationPrincipal Long customerId) {
+            @AuthenticationPrincipal Long companyId) {
         
         var exceptions = exceptionRepository.findAll().stream()
-                .filter(e -> e.getCustomer() != null && e.getCustomer().getId().equals(customerId))
+                .filter(e -> e.getCompany() != null && e.getCompany().getId().equals(companyId))
                 .toList();
         return ResponseEntity.ok(exceptions);
     }
 
-    @PostMapping("/customers")
-    public ResponseEntity<Customer> createCustomer(@RequestBody CustomerCreateRequest request) {
-        Customer customer = new Customer();
-        customer.setName(request.name());
-        customer.setEmail(request.email());
-        Customer saved = customerRepository.save(customer);
+    @PostMapping("/companies")
+    public ResponseEntity<Company> createCompany(@RequestBody CompanyCreateRequest request) {
+        Company company = new Company();
+        company.setName(request.name());
+        company.setEmail(request.email());
+        Company saved = companyRepository.save(company);
         return ResponseEntity.ok(saved);
     }
 
     @PostMapping("/exceptions")
     public ResponseEntity<ExceptionOverride> createException(
             @RequestBody ExceptionRequest request,
-            @AuthenticationPrincipal Long customerId) {
+            @AuthenticationPrincipal Long companyId) {
         
         ExceptionOverride exception = new ExceptionOverride();
         exception.setDate(LocalDate.parse(request.date()));
@@ -104,9 +104,9 @@ public class SlotController {
             exception.setPatternId(Long.parseLong(request.patternId()));
         }
 
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
-        exception.setCustomer(customer);
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+        exception.setCompany(company);
 
         if (request.openTime() != null && request.closeTime() != null) {
             exception.setOpenTime(LocalTime.parse(request.openTime()));
@@ -231,5 +231,5 @@ public class SlotController {
             String closeTime
     ) {}
 
-    public record CustomerCreateRequest(String name, String email) {}
+    public record CompanyCreateRequest(String name, String email) {}
 }
